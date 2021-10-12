@@ -51,7 +51,32 @@ subplot(2, 3, 6), histogram(combined1x2);
 sgtitle('1x2 Convolution.')
 
 sobelHorizontalImage = sobelHorizontal(sampleImage);
-figure, subplot(1, 1, 1), imshow(sobelHorizontalImage);
+sobelVerticalImage = sobelVertical(sampleImage);
+combinedSobelImage = sobelVerticalImage + sobelHorizontalImage;
+figure, subplot(2, 3, 1), imshow(sobelHorizontalImage);
+title('Horizontal');
+subplot(2, 3, 2), imshow(sobelVerticalImage);
+title('Vertical');
+subplot(2, 3, 3), imshow(combinedSobelImage);
+title('Combined');
+subplot(2, 3, 4), histogram(sobelHorizontalImage);
+subplot(2, 3, 5), histogram(sobelVerticalImage);
+subplot(2, 3, 6), histogram(combinedSobelImage);
+sgtitle('Sobel operator.')
+
+sobel1x2Difference = combinedSobelImage - combined1x2;
+figure, subplot(1, 1, 1), imshow(sobel1x2Difference);
+title('Difference between sobel image and 1x2 image.');
+
+artificialImage = toIntensityImage(imread('art-zebra.jpeg'));
+
+artificialSobel = sobelVertical(artificialImage) + sobelHorizontal(artificialImage);
+figure, subplot(1, 2, 1), imshow(artificialSobel);
+subplot(1, 2, 2), imshow(combinedSobelImage);
+sgtitle("Photograph vs. Man-made image.")
+
+gradientImageToEdgeMap(sobelHorizontalImage, 0.05);
+figure, subplot(1, 1, 1), imshow(combinedSobelImage);
 
 
 
@@ -123,7 +148,7 @@ end
 function convolvedImage = sobelHorizontal(sampleImage)
     convolvedImage = sampleImage;
     for x=1:length(sampleImage(:, 1))
-        for y=1:length(sampleImage)
+        for y=1:length(sampleImage(1, :))
             if(y > 1 && x > 1 && y < length(sampleImage) && x < length(sampleImage(:, 1)))
                 newValue = sampleImage(x + 1, y - 1) - sampleImage(x - 1, y - 1);
                 newValue = newValue + 2 * ( sampleImage(x + 1, y) - sampleImage(x - 1, y));
@@ -132,6 +157,32 @@ function convolvedImage = sobelHorizontal(sampleImage)
             end
         end
     end
+end
+
+function convolvedImage = sobelVertical(sampleImage)
+    convolvedImage = sampleImage;
+    for x=1:length(sampleImage(:, 1))
+        for y=1:length(sampleImage(1, :))
+            if(y > 1 && x > 1 && y < length(sampleImage) && x < length(sampleImage(:, 1)))
+                newValue = sampleImage(x + 1, y - 1) - sampleImage(x - 1, y - 1);
+                newValue = newValue + 2 * ( sampleImage(x, y + 1) - sampleImage(x, y + 1));
+                newValue = newValue + sampleImage(x + 1, y + 1) - sampleImage(x - 1, y -1);
+                convolvedImage(x, y) = abs(newValue);
+            end
+        end
+    end
+end
+
+function edgeMap = gradientImageToEdgeMap(sampleImage, t)
+    pixels = sampleImage(:);
+    sort(pixels);
+    %if t = 1, take 100% of pixels. If t = 0.5, take top 50%
+    %of pixels etc.
+    numberOfPixelsToTake = t * length(pixels);
+    lowestValue = pixels(length(pixels) - numberOfPixelsToTake);
+    edgeMap = sampleImage;
+    edgeMap(sampleImage >= lowestValue) = 1;
+    edgeMap(sampleImage < lowestValue) = 0;
 end
 
 
