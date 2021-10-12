@@ -75,8 +75,34 @@ figure, subplot(1, 2, 1), imshow(artificialSobel);
 subplot(1, 2, 2), imshow(combinedSobelImage);
 sgtitle("Photograph vs. Man-made image.")
 
-gradientImageToEdgeMap(sobelHorizontalImage, 0.05);
-figure, subplot(1, 1, 1), imshow(combinedSobelImage);
+sobelEdgeMap = gradientImageToEdgeMap(combinedSobelImage, 0.02);
+edgeMap1x2 = gradientImageToEdgeMap(combined1x2, 0.02);
+figure, subplot(1, 2, 1), imshow(sobelEdgeMap);
+title('Sobel Operator.');
+subplot(1, 2, 2), imshow(edgeMap1x2);
+title('1x2 Convolution.')
+sgtitle('Edge Maps.')
+
+edgeDetector5x5Horizontal = [
+        0, -1, 0, 1, 0;
+        -1, -2,0, 2, 1;
+        -2, -4,0, 4, 2;
+        -1, -2, 0, 2, 1;
+        0, -1, 0, 1, 0;
+    ];
+
+edgeDetector7x7Horizontal = [
+    0,0,-1,0,1,0,0;
+    0,-1,-2,0,2,1,0;
+    -1,-2,-4,0,4,2,1;
+    -2,-4,-8,0,8,4,2;
+    -1,-2,-4,0,4,2,1;
+    0,-1,-2,0,2,1,0;
+    0,0,-1,0,1,0,0;
+];
+
+horizontal5x5 = convolve(sampleImage, edgeDetector5x5Horizontal);
+horizontal7x7 = convolve(sampleImage, edgeDetector7x7Horizontal);
 
 
 
@@ -175,14 +201,34 @@ end
 
 function edgeMap = gradientImageToEdgeMap(sampleImage, t)
     pixels = sampleImage(:);
-    sort(pixels);
+    pixels = sort(pixels);
     %if t = 1, take 100% of pixels. If t = 0.5, take top 50%
     %of pixels etc.
-    numberOfPixelsToTake = t * length(pixels);
+    numberOfPixelsToTake = round(t * length(pixels));
     lowestValue = pixels(length(pixels) - numberOfPixelsToTake);
     edgeMap = sampleImage;
-    edgeMap(sampleImage >= lowestValue) = 1;
+    edgeMap(sampleImage >= lowestValue) = 255;
     edgeMap(sampleImage < lowestValue) = 0;
+end
+
+function convolvedImage = convolve(sampleImage, kernel)
+    buffer = (length(kernel(:, 1)) - 1)/2;
+    convolvedImage = sampleImage;
+    for x=1:length(sampleImage(:, 1))
+        for y=1:length(sampleImage(1, :))
+            if(x > buffer && y > buffer && x + buffer < length(sampleImage(:, 1)) && y + buffer < length(sampleImage(1, :)))
+                newValue = int16(0);
+                areaUnderKernel = sampleImage(x - buffer:x+buffer, y - buffer:y + buffer);
+                for i=1:length(kernel(:, 1))
+                    for j=1:length(kernel(1, :))
+                        nextComponent = int16(areaUnderKernel(i, j)) * int16(kernel(i, j));
+                        newValue = newValue + nextComponent;
+                    end
+                end
+                convolvedImage(x, y) = abs(newValue);
+            end
+        end
+    end
 end
 
 
